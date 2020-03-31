@@ -16,6 +16,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_privileges }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   register: revoke
   failed_when: "postgresql_objects_ignore_revoke_failure and revoke.failed is defined and ((revoke.failed and 'does not exist' not in revoke.msg) or (revoke.failed and ',' in item.roles))"
   when: item.state is defined and item.state == 'absent'
@@ -35,6 +37,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_databases }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   when: item.state is defined and item.state == 'absent'
 
 - name: Create and drop users
@@ -49,6 +53,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_users }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
 
 - name: Create groups
   postgresql_user:
@@ -61,6 +67,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_groups }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   when: item.state is not defined or (item.state is defined and item.state == 'present')
 
 - name: Add or remove users from groups
@@ -71,6 +79,8 @@
         {{ '-U ' ~ postgresql_objects_login_user if postgresql_objects_login_user is defined else '' }}
         {{ '-p ' ~ postgresql_objects_port if postgresql_objects_port is defined else '' }} postgres
   register: psql
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   failed_when: psql.stderr.startswith('ERROR:')
   changed_when: psql.stderr == ''
   with_subelements:
@@ -86,6 +96,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_groups }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   when: item.state is defined and item.state == 'absent'
 
 - name: Create databases
@@ -102,6 +114,8 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_databases }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   when: item.state is not defined or (item.state is defined and item.state == 'present')
 
 - name: Grant user database privileges
@@ -131,4 +145,6 @@
     login_password: "{{ postgresql_objects_login_password | default(omit) }}"
     port: "{{ postgresql_objects_port | default(omit) }}"
   with_items: "{{ postgresql_objects_privileges }}"
+  become: yes
+  become_user: "{{ postgresql_admin_user }}"
   when: item.state is not defined or (item.state is defined and item.state == 'present')
